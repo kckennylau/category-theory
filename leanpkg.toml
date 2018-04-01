@@ -1,0 +1,10 @@
+[package]
+name = "category-theory"
+path = "src"            # hard-coded, will be removed in the future
+
+[dependencies]
+# local dependency
+# git dependency
+mathlib =
+  { git = "https://github.com/leanprover/mathlib",
+    rev = "d84af03bdb8ec4e02c96b6262e7b78c8f3de412b" }

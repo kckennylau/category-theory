@@ -1,4 +1,4 @@
-import .natural_transformation
+import .natural_transformation .free_group
 
 universes u v
 
@@ -6,7 +6,7 @@ namespace category
 
 namespace examples
 
-def Cat : category Σ α : Type u, category.{u v} α :=
+@[reducible] def Cat : category Σ α : Type u, category.{u v} α :=
 { Mor := λ C D, functor C.2 D.2,
   Comp := λ C D E, functor.comp C.2 D.2 E.2,
   Id := λ C, functor.id C.2,
@@ -14,13 +14,19 @@ def Cat : category Σ α : Type u, category.{u v} α :=
   Hid_right := λ C D F, by cases F; refl,
   Hassoc := λ _ _ _ _ _ _ _, rfl, }
 
-def Set_ : category Σ c d, Set.Mor punit d :=
+@[reducible] def Set_ : category Σ c d, Set.Mor punit d :=
 coslice Set punit
 
-def Set_.forgetful : functor Set_ Set :=
+@[reducible] def Set_.forgetful : functor Set_ Set :=
 comma.right _ _ _ _ _
 
-def Grp.forgetful : functor Grp Set_ :=
+@[reducible] def Set_.free : functor Set Set_ :=
+{ F := λ S, ⟨(), option S, λ x, none⟩ ,
+  mor := λ S T f, ⟨(plift.up $ rfl, option.map f), funext $ λ x, rfl⟩,
+  Hid := λ S, subtype.eq $ prod.ext.2 $ ⟨rfl, funext $ λ x, option.rec_on x rfl $ λ t, rfl⟩,
+  Hcomp := λ S T U f g, by dsimp; congr; funext; cases x; funext; refl }
+
+@[reducible] def Grp.forgetful : functor Grp Set_ :=
 { F := λ G, ⟨(), G.1, λ _, @has_one.one G.1 (@monoid.to_has_one G.1 (@group.to_monoid G.1 G.2))⟩,
   mor := λ G H f, ⟨(plift.up rfl, λ x, f.1 x),
     funext $ λ x, eq.symm $ @is_group_hom.one G.1 H.1 G.2 H.2 f.1 f.2⟩,
@@ -37,34 +43,34 @@ instance add_comm_group.to_comm_group (α : Type u) [add_comm_group α] : comm_g
   mul_left_inv := add_left_neg,
   mul_comm := add_comm }
 
-def Ab.forgetful : functor Ab Grp :=
+@[reducible] def Ab.forgetful : functor Ab Grp :=
 { F := λ G, ⟨G.1, by letI := G.2; apply_instance⟩,
   mor := λ G H, id,
   Hid := λ G, rfl,
   Hcomp := λ G H K f g, rfl }
 
-def Cat.forgetful : functor Cat Set :=
+@[reducible] def Cat.forgetful : functor Cat Set :=
 { F := λ C, C.1,
   mor := λ C D F, F.F,
   Hid := λ C, rfl,
   Hcomp := λ C D E F G, rfl }
 
-def Preord.forgetful : functor Preord Set :=
+@[reducible] def Preord.forgetful : functor Preord Set :=
 { F := λ C, C.1,
   mor := λ C D f, f.1,
   Hid := λ C, rfl,
   Hcomp := λ C D E F G, rfl }
 
-def Top.forgetful : functor Top Set :=
+@[reducible] def Top.forgetful : functor Top Set :=
 { F := λ C, C.1,
   mor := λ C D f, f.1,
   Hid := λ C, rfl,
   Hcomp := λ C D E F G, rfl }
 
-def Top_ : category Σ c d, Top.Mor ⟨punit, ⊤⟩ d :=
+@[reducible] def Top_ : category Σ c d, Top.Mor ⟨punit, ⊤⟩ d :=
 coslice Top ⟨punit, ⊤⟩
 
-def Set.binary_product (x y) : binary_product Set x y :=
+@[reducible] def Set.binary_product (x y) : binary_product Set x y :=
 { obj := x × y,
   cone :=
   { mor := λ b f, bool.rec_on b f.1 f.2,
@@ -76,7 +82,7 @@ def Set.binary_product (x y) : binary_product Set x y :=
     λ t, prod.ext.2 ⟨(congr_fun (f.2 ff) t).trans $ (congr_fun (g.2 ff) t).symm,
     (congr_fun (f.2 tt) t).trans $ (congr_fun (g.2 tt) t).symm⟩ }
 
-def Set.product (ι : Type v) (f : ι → Type (max u v)) : product Set ι f :=
+@[reducible] def Set.product (ι : Type v) (f : ι → Type (max u v)) : product Set ι f :=
 { obj := Π i, f i,
   cone :=
   { mor := λ i f, f i,
@@ -86,7 +92,7 @@ def Set.product (ι : Type v) (f : ι → Type (max u v)) : product Set ι f :=
   universal := λ z F, subsingleton.intro $ λ f g, subtype.eq $ funext $
     λ t, funext $ λ i, (congr_fun (f.2 i) t).trans (congr_fun (g.2 i) t).symm }
 
-def Grp.opposite : functor Grp Grp :=
+@[reducible] def Grp.opposite : functor Grp Grp :=
 { F := λ G, ⟨G.1, by letI := G.2; exact
   { mul := λ x y, y * x,
     mul_assoc := λ x y z, (mul_assoc z y x).symm,
@@ -99,7 +105,7 @@ def Grp.opposite : functor Grp Grp :=
   Hid := λ G, subtype.eq rfl,
   Hcomp := λ G H K f g, subtype.eq rfl }
 
-def Grp.natural_transformation : natural_transformation Grp Grp (functor.id Grp) Grp.opposite :=
+@[reducible] def Grp.natural_transformation : natural_transformation Grp Grp (functor.id Grp) Grp.opposite :=
 { mor := λ G, by letI := G.2; exact ⟨λ x, x⁻¹, λ x y, mul_inv_rev x y⟩,
   Hcomp := λ G H f, subtype.eq $ funext $ λ x, by letI := G.2; letI := H.2; exact f.2.inv x }
 

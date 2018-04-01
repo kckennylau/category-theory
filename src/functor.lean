@@ -10,19 +10,19 @@ variables {α : Type u} (C : category.{u v} α)
 variables {β : Type u₁} (D : category.{u₁ v₁} β)
 variables {γ : Type u₂} (E : category.{u₂ v₂} γ)
 
-def obj (x : α) : functor examples.one C :=
+@[reducible] def obj (x : α) : functor examples.one C :=
 { F := λ _, x,
   mor := λ _ _ _, C.Id x,
   Hid := λ _, rfl,
   Hcomp := λ _ _ _ _ _, C.Hid_left x x (C.Id x) }
 
-def to_obj (y : β) : functor C D :=
+@[reducible] def to_obj (y : β) : functor C D :=
 { F := λ _, y,
   mor := λ _ _ _, D.Id y,
   Hid := λ _, rfl,
   Hcomp := λ _ _ _ _ _, D.Hid_left y y (D.Id y) }
 
-def of_discrete (f : α → β) : functor (discrete α) D :=
+@[reducible] def of_discrete (f : α → β) : functor (discrete α) D :=
 { F := f,
   mor := λ x y hxy, eq.rec_on hxy.1 $ D.Id (f x),
   Hid := λ x, rfl,
@@ -31,7 +31,7 @@ def of_discrete (f : α → β) : functor (discrete α) D :=
 
 end functor
 
-def comma {α : Type u} (C : category.{u v} α)
+@[reducible] def comma {α : Type u} (C : category.{u v} α)
   {β : Type u₁} (D : category.{u₁ v₁} β)
   {γ : Type u₂} (E : category.{u₂ v₂} γ)
   (F : functor C E) (G : functor D E) :
@@ -46,13 +46,13 @@ def comma {α : Type u} (C : category.{u v} α)
   Hid_right := λ x y P, subtype.eq $ by dsimp; rw [C.Hid_right, D.Hid_right]; cases P.1; refl,
   Hassoc := λ x y z w P Q R, subtype.eq $ by dsimp; rw [C.Hassoc, D.Hassoc] }
 
-def arrow {α : Type u} (C : category.{u v} α) : category Σ c d, C.Mor c d :=
+@[reducible] def arrow {α : Type u} (C : category.{u v} α) : category Σ c d, C.Mor c d :=
 comma C C C (functor.id C) (functor.id C)
 
-def slice {α : Type u} (C : category.{u v} α) (x : α) : category Σ c d, C.Mor c x :=
+@[reducible] def slice {α : Type u} (C : category.{u v} α) (x : α) : category Σ c d, C.Mor c x :=
 comma C examples.one C (functor.id C) (functor.obj C x)
 
-def coslice {α : Type u} (C : category.{u v} α) (x : α) : category Σ c d, C.Mor x d :=
+@[reducible] def coslice {α : Type u} (C : category.{u v} α) (x : α) : category Σ c d, C.Mor x d :=
 comma examples.one C C (functor.obj C x) (functor.id C)
 
 namespace comma
@@ -62,19 +62,19 @@ variables {β : Type u₁} (D : category.{u₁ v₁} β)
 variables {γ : Type u₂} (E : category.{u₂ v₂} γ)
 variables (F : functor C E) (G : functor D E)
 
-def left : functor (comma C D E F G) C :=
+@[reducible] def left : functor (comma C D E F G) C :=
 { F := λ x, x.1,
   mor := λ x y P, P.1.1,
   Hid := λ x, rfl,
   Hcomp := λ x y z P Q, rfl }
 
-def right : functor (comma C D E F G) D :=
+@[reducible] def right : functor (comma C D E F G) D :=
 { F := λ x, x.2.1,
   mor := λ x y P, P.1.2,
   Hid := λ x, rfl,
   Hcomp := λ x y z P Q, rfl }
 
-def arrow : functor (comma C D E F G) (arrow E) :=
+@[reducible] def arrow : functor (comma C D E F G) (arrow E) :=
 { F := λ x, ⟨_, _, x.2.2⟩,
   mor := λ x y P, ⟨(F.mor _ _ P.1.1, G.mor _ _ P.1.2), P.2⟩,
   Hid := λ x, subtype.eq $ by dsimp [arrow, comma]; rw [F.Hid, G.Hid],
