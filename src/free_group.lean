@@ -269,26 +269,25 @@ def reduce : word S → word S
 | (h1::h2::t)                   := h1::h2::reduce t
 | w                             := w
 
-theorem reduce.quotient_eq : ∀ w : word S, ⟦w⟧ = ⟦reduce S w⟧
+theorem reduce.sound : ∀ w : word S, ⟦w⟧ = ⟦reduce S w⟧
 | []                            := rfl
 | ((sum.inl x)::[])             := rfl
 | ((sum.inr x)::[])             := rfl
-| ((sum.inr x)::(sum.inr y)::t) :=
-    show ⟦[sum.inr x, sum.inr y]⟧ * ⟦t⟧
-      = ⟦[sum.inr x, sum.inr y]⟧ * ⟦reduce S t⟧,
-    from congr_arg _ $ reduce.quotient_eq t
 | ((sum.inl x)::(sum.inl y)::t) :=
     show ⟦[sum.inl x, sum.inl y]⟧ * ⟦t⟧ = ⟦[sum.inl x, sum.inl y]⟧ * ⟦reduce S t⟧,
-    from congr_arg _ $ reduce.quotient_eq t
+    from congr_arg _ $ reduce.sound t
+| ((sum.inr x)::(sum.inr y)::t) :=
+    show ⟦[sum.inr x, sum.inr y]⟧ * ⟦t⟧ = ⟦[sum.inr x, sum.inr y]⟧ * ⟦reduce S t⟧,
+    from congr_arg _ $ reduce.sound t
 | ((sum.inl x)::(sum.inr y)::t) := begin
     dsimp [reduce],
     by_cases x = y; simp [h],
     { change ⟦[sum.inl y]⟧ * ⟦[sum.inr y]⟧ * ⟦t⟧ = ⟦reduce S t⟧,
       have h1 : ⟦[sum.inl y]⟧ * ⟦[sum.inr y]⟧ = 1,
       { exact mul_inv_self _ },
-      rw [h1, one_mul, reduce.quotient_eq t] },
+      rw [h1, one_mul, reduce.sound t] },
     { change ⟦[sum.inl x, sum.inr y]⟧ * ⟦t⟧ = ⟦[sum.inl x, sum.inr y]⟧ * ⟦reduce S t⟧,
-      rw reduce.quotient_eq t }
+      rw reduce.sound t }
   end
 | ((sum.inr x)::(sum.inl y)::t) := begin
     dsimp [reduce],
@@ -296,10 +295,65 @@ theorem reduce.quotient_eq : ∀ w : word S, ⟦w⟧ = ⟦reduce S w⟧
     { change ⟦[sum.inr y]⟧ * ⟦[sum.inl y]⟧ * ⟦t⟧ = ⟦reduce S t⟧,
       have h1 : ⟦[sum.inr y]⟧ * ⟦[sum.inl y]⟧ = 1,
       { exact mul_inv_self _ },
-      rw [h1, one_mul, reduce.quotient_eq t] },
+      rw [h1, one_mul, reduce.sound t] },
     { change ⟦[sum.inr x, sum.inl y]⟧ * ⟦t⟧ = ⟦[sum.inr x, sum.inl y]⟧ * ⟦reduce S t⟧,
-      rw reduce.quotient_eq t }
+      rw reduce.sound t }
   end
+
+theorem reduce.exact.mul.nil : ∀ p q : word S, [] = reduce S p →
+  reduce S q = reduce S (p * q)
+| [] q h := rfl
+| ((sum.inl x)::(sum.inr y)::t) q h :=
+  show reduce S q = reduce S (sum.inl x :: sum.inr y :: t * q),
+  begin
+    dsimp [reduce] at h ⊢,
+    by_cases H : x = y,
+    { rw [if_pos H] at h ⊢,
+      exact reduce.exact.mul.nil _ _ h },
+    { rw [if_neg H] at h ⊢,
+      exact list.no_confusion h },
+  end
+| ((sum.inr x)::(sum.inl y)::t) q h :=
+  show reduce S q = reduce S (sum.inr x :: sum.inl y :: t * q),
+  begin
+    dsimp [reduce] at h ⊢,
+    by_cases H : x = y,
+    { rw [if_pos H] at h ⊢,
+      exact reduce.exact.mul.nil _ _ h },
+    { rw [if_neg H] at h ⊢,
+      exact list.no_confusion h },
+  end
+
+theorem reduce.exact : ∀ v w : word S, v ≈ w → reduce S v = reduce S w :=
+begin
+  intros v w h,
+  induction h with h c d h ih c d e h1 h2 ih1 ih2
+    c d p q h1 h2 ih1 ih2 c d h ih c,
+  case inv_mon.to_group.rel.refl
+  { refl },
+  case inv_mon.to_group.rel.symm
+  { exact ih.symm },
+  case inv_mon.to_group.rel.trans
+  { exact ih1.trans ih2 },
+  case inv_mon.to_group.rel.mul
+  { clear h1 h2,
+    induction c with c1 c2 ih3,
+    case list.nil
+    { change [] = reduce S p at ih1,
+      change reduce S d = reduce S (p * q),
+      rw ih2, clear ih2,
+      exact reduce.exact.mul.nil _ _ _ ih1 },
+    case list.cons
+    { admit } },
+  case inv_mon.to_group.rel.inv
+  { admit },
+  case inv_mon.to_group.rel.mul_left_inv
+  { induction c with h t ih,
+    case list.nil
+    { refl },
+    case list.cons
+    { admit } }
+end
 
 theorem reduce.min : ∀ w : word S, (reduce S w).length ≤ w.length 
 | []                            := dec_trivial
@@ -320,10 +374,40 @@ theorem reduce.min : ∀ w : word S, (reduce S w).length ≤ w.length
 | ((sum.inr x)::(sum.inl y)::t) :=
   match (by apply_instance : decidable (x = y)) with
   | (decidable.is_true  h) := nat.le_succ_of_le $
-      nat.le_succ_of_le $ by dsimp [reduce]; rw [if_pos h];
-      exact reduce.min t
+      nat.le_succ_of_le $ by dsimp [reduce];
+        rw [if_pos h]; exact reduce.min t
   | (decidable.is_false h) := by dsimp [reduce]; rw [if_neg h];
       exact add_le_add_right (add_le_add_right (reduce.min t) 1) 1
   end
+
+theorem reduce.idem : ∀ w : word S, reduce S (reduce S w) = reduce S w
+| []                            := rfl
+| ((sum.inl x)::[])             := rfl
+| ((sum.inr x)::[])             := rfl
+| ((sum.inl x)::(sum.inl y)::t) :=
+    show sum.inl x :: sum.inl y :: reduce.{u} S (reduce S t)
+      = sum.inl x :: sum.inl y :: reduce S t,
+    from congr_arg _ $ congr_arg _ $ reduce.idem t
+| ((sum.inr x)::(sum.inr y)::t) :=
+    show sum.inr x :: sum.inr y :: reduce.{u} S (reduce S t)
+      = sum.inr x :: sum.inr y :: reduce S t,
+    from congr_arg _ $ congr_arg _ $ reduce.idem t
+| ((sum.inl x)::(sum.inr y)::t) :=
+  match (by apply_instance : decidable (x = y)) with
+  | (decidable.is_true  h) := by dsimp [reduce];
+      rw [if_pos h]; exact reduce.idem t
+  | (decidable.is_false h) := by dsimp [reduce]; rw [if_neg h];
+      dsimp [reduce]; rw [if_neg h];
+      from congr_arg _ (congr_arg _ (reduce.idem t))
+  end
+| ((sum.inr x)::(sum.inl y)::t) :=
+  match (by apply_instance : decidable (x = y)) with
+  | (decidable.is_true  h) := by dsimp [reduce];
+      rw [if_pos h]; exact reduce.idem t
+  | (decidable.is_false h) := by dsimp [reduce]; rw [if_neg h];
+      dsimp [reduce]; rw [if_neg h];
+      from congr_arg _ (congr_arg _ (reduce.idem t))
+  end
+
 
 end free_group
