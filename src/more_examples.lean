@@ -1,4 +1,4 @@
-import .natural_transformation
+import .natural_transformation .free_group
 
 universes u v
 
@@ -132,6 +132,17 @@ coslice Top ⟨punit, ⊤⟩
   mor := λ C D f, ⟨f, continuous_bot⟩,
   Hid := λ C, rfl,
   Hcomp := λ C D E F G, rfl }
+
+@[reducible] def Grp.free : functor Set Grp :=
+{ F := λ S, ⟨free_group S, free_group.group S⟩,
+  mor := λ S T f, ⟨free_group.to_group S (free_group T) (free_group.of_type T ∘ f),
+    free_group.to_group.is_group_hom _ _ _⟩,
+  Hid := λ S, subtype.eq $ funext $ λ x, eq.symm $
+    free_group.to_group.unique _ _ _ _ (λ x y, rfl) (λ x, rfl) _,
+  Hcomp := λ S T U f g, subtype.eq $ funext $
+    λ x, free_group.to_group.unique _ _ _ _
+      (λ x y, by dsimp; rw [free_group.to_group.is_group_hom, free_group.to_group.is_group_hom])
+      (λ x, by dsimp; rw [free_group.to_group.commutes, free_group.to_group.commutes]) _ }
 
 end examples
 

@@ -58,6 +58,24 @@ adjunction.make _ _
   (λ S T f, rfl)
   (λ S T f, subtype.eq rfl)
 
+@[reducible] def Grp_Set : adjunction examples.Grp examples.Set :=
+adjunction.free_forgetful _
+  examples.Grp.free
+  (functor.comp _ _ _ examples.Set_.forgetful examples.Grp.forgetful)
+  (λ S G f, ⟨@free_group.to_group _ _ G.2 f, @free_group.to_group.is_group_hom _ _ G.2 f⟩)
+  (λ S G f x, f.1 $ free_group.of_type S x)
+  (λ G₁ G₂ S₁ S₂ f g t z, rfl)
+  (λ G₁ G₂ S₁ S₂ f g t, subtype.eq $ funext $ λ x, eq.symm $
+    @free_group.to_group.unique S₂ G₂.1 G₂.2 (f.val ∘ t ∘ g)
+      ((examples.Grp.Comp (examples.Grp.free.F S₂) (examples.Grp.free.F S₁) G₂
+        (examples.Grp.Comp (examples.Grp.free.F S₁) G₁ G₂ f
+           ⟨@free_group.to_group S₁ G₁.1 G₁.2 t, @free_group.to_group.is_group_hom S₁ G₁.1 G₁.2 t⟩)
+        (examples.Grp.free.mor S₂ S₁ g)).val)
+      (λ x y, by dsimp; rw [free_group.to_group.is_group_hom, free_group.to_group.is_group_hom, f.2])
+      (λ x, by dsimp; rw [free_group.to_group.commutes, free_group.to_group.commutes]) _)
+  (λ S G f, subtype.eq $ funext $ λ x, eq.symm $ @free_group.to_group.unique _ _ G.2 _ _ f.2 (λ x, rfl) _)
+  (λ S G f, funext $ λ x, @free_group.to_group.commutes _ _ G.2 _ _)
+
 end examples
 
 end adjunction
