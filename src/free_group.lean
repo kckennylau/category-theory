@@ -169,6 +169,44 @@ theorem left_adjoint.unique : ∀ x, g x = left_adjoint x
 
 end left_adjoint
 
+inductive red (IT : Type u) [inv_type IT] :
+  inv_type.to_inv_mon IT → inv_type.to_inv_mon IT → Prop
+| cons : ∀ a x y, red x y → red (a :: x) (a :: y)
+| cancel : ∀ a x, red (a :: a⁻¹ :: x) x
+
+theorem red.cons.inv (IT : Type u) [inv_type IT] :
+  ∀ a x y, red IT (a :: x) (a :: y) → red IT x y
+| _ _ _ (red.cons a x y h) := h
+| _ _ p (red.cancel a x) :=
+  have h1 : _ := red.cancel a⁻¹ p,
+  by rwa inv_type.inv_inv a at h1
+
+/-
+theorem eqv_gen_red (IT : Type u) [inv_type IT]
+  {x y : inv_type.to_inv_mon IT} : x ≈ y ↔ eqv_gen (red IT) x y :=
+begin
+  split,
+  { intro h,
+    induction h with h c d h ih c d e h1 h2 ih1 ih2
+      c d p q h1 h2 ih1 ih2 c d h ih c,
+    case inv_mon.to_group.rel.refl
+    { exact eqv_gen.refl _ },
+    case inv_mon.to_group.rel.symm
+    { exact eqv_gen.symm _ _ ih },
+    case inv_mon.to_group.rel.trans
+    { exact eqv_gen.trans _ _ _ ih1 ih2 },
+    case inv_mon.to_group.rel.mul
+    { induction c with c1 c2 ih3,
+      { admit },
+      { admit } },
+    case inv_mon.to_group.rel.inv
+    { admit },
+    case inv_mon.to_group.rel.mul_left_inv
+    { admit } },
+  { admit }
+end
+-/
+
 end inv_type.to_inv_mon
 
 @[reducible] def to_inv_type (T : Type u) :=
@@ -324,6 +362,7 @@ theorem reduce.exact.mul.nil : ∀ p q : word S, [] = reduce S p →
       exact list.no_confusion h },
   end
 
+/-
 theorem reduce.exact : ∀ v w : word S, v ≈ w → reduce S v = reduce S w :=
 begin
   intros v w h,
@@ -354,6 +393,7 @@ begin
     case list.cons
     { admit } }
 end
+-/
 
 theorem reduce.min : ∀ w : word S, (reduce S w).length ≤ w.length 
 | []                            := dec_trivial
@@ -409,5 +449,9 @@ theorem reduce.idem : ∀ w : word S, reduce S (reduce S w) = reduce S w
       from congr_arg _ (congr_arg _ (reduce.idem t))
   end
 
+/-
+def to_word : free_group S → word S :=
+quotient.lift (reduce S) sorry
+-/
 
 end free_group

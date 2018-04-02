@@ -1,51 +1,62 @@
 import .adjunction .more_examples
 
+universe u
+
 namespace category
 
 namespace adjunction
 
 namespace examples
 
-@[reducible] def Set_Set : adjunction examples.Set_ examples.Set :=
-{ left := examples.Set_.free,
-  right := examples.Set_.forgetful,
-  Hom_iso :=
-  { to_mor :=
-    { mor := λ x f, ⟨(plift.up $ by cases x.2.1; refl,
-        λ t, option.rec_on t (x.2.2.2 punit.star) f),
-        funext $ λ t, punit.rec_on t rfl⟩,
-      Hcomp := λ x y f, begin
-        funext,
-        apply subtype.eq,
-        apply prod.ext.2,
-        split,
-        { refl },
-        { funext,
-          cases t,
-          { dsimp [option.map, option.bind] at *,
-            rw [congr_fun f.2.2] },
-          { refl } }
-      end },
-    inv_mor :=
-    { mor := λ x f t, f.1.2 $ some t,
-      Hcomp := λ x y f, by funext; dsimp [option.map, option.bind]; refl },
-    split_monomorphism := by dsimp [natural_transformation.comp] at *; congr,
-    split_epimorphism := begin
-        dsimp [natural_transformation.comp] at *,
-        congr,
-        funext x f,
-        apply subtype.eq,
-        apply prod.ext.2,
-        split,
-        { cases f with f1 f2,
-          cases f1 with f3 f4,
-          cases f3,
-          refl },
-        { funext t,
-          cases t,
-          { apply congr_fun f.2 },
-          { refl } }
-      end } }
+@[reducible] def Set_Set : adjunction.{u+1 u} examples.Set_ examples.Set :=
+adjunction.free_forgetful _
+  examples.Set_.free
+  examples.Set_.forgetful
+  (λ S P f, ⟨(plift.up $ unit_eq _ _,
+    λ t, option.rec_on t (P.2.2 punit.star) f),
+    funext $ λ x, punit.rec_on x rfl⟩)
+  (λ S P f x, f.1.2 $ some x)
+  (λ P1 P2 S1 S2 f g t z, by dsimp [option.map, option.bind]; refl)
+  (λ P1 P2 S1 S2 f g t, subtype.eq $ prod.ext.2 $ ⟨rfl, funext $ λ x,
+    by cases x; dsimp [option.map, option.bind]; try {refl}; apply congr_fun f.2⟩)
+  (λ S P f, subtype.eq $ prod.ext.2 $ ⟨by dsimp; cases f.1.1; congr,
+    funext $ λ t, option.rec_on t
+      (by dsimp; from congr_fun f.2 punit.star)
+      (λ z, rfl)⟩)
+  (λ S P f, rfl)
+
+@[reducible] def Set.Prod_Hom (B : Type u) : adjunction examples.Set examples.Set :=
+adjunction.make _ _
+  (examples.Set.product_functor B)
+  (examples.Set.Hom_functor_right B)
+  (λ A C f x, f x.1 x.2)
+  (λ A C f x y, f (x, y))
+  (λ A₁ A₂ C₁ C₂ f g t, rfl)
+  (λ A₁ A₂ C₁ C₂ f g t, rfl)
+  (λ A C f, funext $ λ ⟨t₁, t₂⟩, rfl)
+  (λ A C f, rfl)
+
+@[reducible] def Top_Set : adjunction examples.Top examples.Set :=
+adjunction.free_forgetful _
+  examples.Top.discrete
+  examples.Top.forgetful
+  (λ S T f, ⟨f, continuous_top⟩)
+  (λ S T f, f.1)
+  (λ T₁ T₂ S₁ S₂ f g t z, rfl)
+  (λ T₁ T₂ S₁ S₂ f g t, subtype.eq rfl)
+  (λ S T f, subtype.eq rfl)
+  (λ S T f, rfl)
+
+@[reducible] def Set_Top : adjunction examples.Set examples.Top :=
+adjunction.make _ _
+  examples.Top.forgetful
+  examples.Top.indiscrete
+  (λ S T f, f.1)
+  (λ S T f, ⟨f, continuous_bot⟩)
+  (λ T₁ T₂ S₁ S₂ f g t, subtype.eq rfl)
+  (λ T₁ T₂ S₁ S₂ f g t, rfl)
+  (λ S T f, rfl)
+  (λ S T f, subtype.eq rfl)
 
 end examples
 

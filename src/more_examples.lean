@@ -1,4 +1,4 @@
-import .natural_transformation .free_group
+import .natural_transformation
 
 universes u v
 
@@ -108,6 +108,30 @@ coslice Top ⟨punit, ⊤⟩
 @[reducible] def Grp.natural_transformation : natural_transformation Grp Grp (functor.id Grp) Grp.opposite :=
 { mor := λ G, by letI := G.2; exact ⟨λ x, x⁻¹, λ x y, mul_inv_rev x y⟩,
   Hcomp := λ G H f, subtype.eq $ funext $ λ x, by letI := G.2; letI := H.2; exact f.2.inv x }
+
+@[reducible] def Set.product_functor (B : Type u) : functor Set Set :=
+{ F := λ A, A × B,
+  mor := λ A₁ A₂ f x, (f x.1, x.2),
+  Hid := λ A, funext $ λ x, prod.ext.2 $ ⟨rfl, rfl⟩,
+  Hcomp := λ A₁ A₂ A₃ f g, funext $ λ x, prod.ext.2 $ ⟨rfl, rfl⟩ }
+
+@[reducible] def Set.Hom_functor_right (B : Type u) : functor Set Set :=
+{ F := λ C, B → C,
+  mor := λ C₁ C₂ f g t, f (g t),
+  Hid := λ C, rfl,
+  Hcomp := λ C₁ C₂ C₃ f g, rfl }
+
+@[reducible] def Top.discrete : functor Set Top :=
+{ F := λ S, ⟨S, ⊤⟩,
+  mor := λ C D f, ⟨f, continuous_top⟩,
+  Hid := λ C, rfl,
+  Hcomp := λ C D E F G, rfl }
+
+@[reducible] def Top.indiscrete : functor Set Top :=
+{ F := λ S, ⟨S, ⊥⟩,
+  mor := λ C D f, ⟨f, continuous_bot⟩,
+  Hid := λ C, rfl,
+  Hcomp := λ C D E F G, rfl }
 
 end examples
 
