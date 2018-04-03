@@ -67,6 +67,12 @@ instance add_comm_group.to_comm_group (α : Type u) [add_comm_group α] : comm_g
   Hid := λ C, rfl,
   Hcomp := λ C D E F G, rfl }
 
+@[reducible] def GSet.forgetful (G : Type u) [group G] : functor (GSet G) Set :=
+{ F := λ C, C.1,
+  mor := λ C D f, f.1,
+  Hid := λ C, rfl,
+  Hcomp := λ C D E F G, rfl }
+
 @[reducible] def Top_ : category Σ c d, Top.Mor ⟨punit, ⊤⟩ d :=
 coslice Top ⟨punit, ⊤⟩
 
@@ -166,6 +172,19 @@ coslice Top ⟨punit, ⊤⟩
         (tensor_product.universal_property.factor_linear _))
       (λ x y, by dsimp; rw tensor_product.tprod_map.commutes;
         rw tensor_product.tprod_map.commutes; refl) }
+
+@[reducible] def GSet.product (G : Type u) [group G] : functor Set (GSet G) :=
+{ F := λ S, ⟨G × S, group_action.examples.product G S⟩,
+  mor := λ S T f, ⟨λ gs, (gs.1, f gs.2), λ g hs, rfl⟩,
+  Hid := λ S, subtype.eq $ funext $ λ ⟨g, s⟩, rfl,
+  Hcomp := λ S T U f g, subtype.eq $ funext $ λ ⟨g, s⟩, rfl }
+
+@[reducible] def GSet.func (G : Type u) [group G]
+  (X : Type v) [group_action G X] : functor Set.{v} (GSet G) :=
+{ F := λ S, ⟨X → S, group_action.examples.func G X S⟩,
+  mor := λ S T f, ⟨λ t x, f (t x), λ g t, rfl⟩,
+  Hid := λ S, subtype.eq $ rfl,
+  Hcomp := λ S T U f g, subtype.eq $ rfl }
 
 end examples
 

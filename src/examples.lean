@@ -1,4 +1,4 @@
-import .basic
+import .basic .group_action
 
 universes u v
 
@@ -43,6 +43,15 @@ namespace examples
   Hid_left := λ G H f, subtype.eq rfl,
   Hid_right := λ G H f, subtype.eq rfl,
   Hassoc := λ G H K N f g h, subtype.eq rfl }
+
+@[reducible] def GSet (G : Type u) [group G] : category Σ X : Type v, group_action G X :=
+{ Mor := λ X Y, { f : X.1 → Y.1 // @group_action.is_hom G _ _ X.2 _ Y.2 f },
+  Comp := λ X Y Z f g, ⟨f.1 ∘ g.1, by letI := X.2; letI := Y.2; letI := Z.2;
+    from group_action.is_hom.comp G f.1 f.2 g.1 g.2⟩,
+  Id := λ X, ⟨id, @group_action.is_hom.id G _ X.1 X.2⟩,
+  Hid_left := λ X Y f, subtype.eq rfl,
+  Hid_right := λ X Y f, subtype.eq rfl,
+  Hassoc := λ X Y Z W f g h, subtype.eq rfl }
 
 @[reducible] def Top : category Σ α : Type u, topological_space α :=
 { Mor := λ X Y, { f : X.1 → Y.1 // @continuous _ _ X.2 Y.2 f },
