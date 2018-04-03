@@ -138,6 +138,16 @@ adjunction.make _ _
   (λ X S f, subtype.eq $ by dsimp; funext x g; rw f.2 (g⁻¹) x;
     dsimp [group_action.examples.func]; congr; rw inv_inv; apply mul_one)
 
+@[reducible] def Set.Diag_Prod : adjunction (product_category Set Set) Set :=
+adjunction.make _ _
+  Set.diag Set.prod
+  (λ S P f, (λ s, (f s).1, λ s, (f s).2))
+  (λ S P f s, (f.1 s, f.2 s))
+  (λ _ _ _ _, by simp)
+  (λ _ _ _ _, by simp)
+  (λ _ _ _, by simp)
+  (λ _ _ _, by simp)
+
 end examples
 
 end category

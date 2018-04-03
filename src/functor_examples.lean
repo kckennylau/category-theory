@@ -186,6 +186,18 @@ coslice Top ⟨punit, ⊤⟩
   Hid := λ S, subtype.eq $ rfl,
   Hcomp := λ S T U f g, subtype.eq $ rfl }
 
+@[reducible] def Set.prod : functor (product_category Set Set) Set :=
+{ F := λ S, S.1 × S.2,
+  mor := λ S₁ S₂ f x, (f.1 x.1, f.2 x.2),
+  Hid := λ S, by funext; simp,
+  Hcomp := λ S T, by simp }
+
+@[reducible] def Set.diag : functor Set (product_category Set Set) :=
+{ F := λ S, (S, S),
+  mor := λ S₁ S₂ f, (f, f),
+  Hid := by simp,
+  Hcomp := λ S T, by simp }
+
 end examples
 
 end category
