@@ -60,7 +60,9 @@ def adjunction.make : adjunction C D :=
         congr, funext, dsimp, apply descend_extend end } }
 
 end make
-set_option pp.universes true
+
+section free_forgetful
+
 variables {α : Type (u+1)} (C : category.{u+1 u} α)
 variables (free : functor examples.Set.{u} C)
 variables (forgetful : functor C examples.Set.{u})
@@ -80,5 +82,48 @@ adjunction.make _ _ free forgetful extend descend
   (λ _ _ _ _ _ _ _, funext $ λ _, descend_natural _ _ _ _ _ _ _ _)
   extend_natural
   extend_descend descend_extend
+
+end free_forgetful
+
+def adjunction.id {α} (C : category.{u v} α) : adjunction C C :=
+adjunction.make _ _
+  (functor.id C) (functor.id C)
+  (λ x y, id) (λ x y, id)
+  (λ _ _ _ _ _ _ _, rfl)
+  (λ _ _ _ _ _ _ _, rfl)
+  (λ _ _ _, rfl)
+  (λ _ _ _, rfl)
+
+def adjunction.comp {α β γ} (C : category.{u v} α)
+  (D : category.{u v} β) (E : category.{u v} γ)
+  (F : adjunction D E) (G : adjunction C D) :
+  adjunction C E :=
+{ left := functor.comp _ _ _ G.left F.left,
+  right := functor.comp _ _ _ F.right G.right,
+  Hom_iso :=
+  { to_mor :=
+    { mor := λ x z, F.3.1.1 (_, _) (G.3.1.1 (_, _) z),
+      Hcomp := λ x y z, funext $ λ t,
+        by have h1 := congr_fun (G.3.1.2 (F.1.1 x.1, x.2) (F.1.1 y.1, y.2) (F.1.2 _ _ z.1, z.2)) t;
+        have h2 := congr_fun (F.3.1.2 (x.1, G.2.1 x.2) (y.1, G.2.1 y.2) (z.1, G.2.2 _ _ z.2)) (G.3.1.1 (_, _) t);
+        dsimp at *; rw [h1, h2] },
+    inv_mor :=
+    { mor := λ x z, G.3.2.1 (_, _) (F.3.2.1 (_, _) z),
+      Hcomp := λ x y z, funext $ λ t,
+        by have h1 := congr_fun (F.3.2.2 (x.1, G.2.1 x.2) (y.1, G.2.1 y.2) (z.1, G.2.2 _ _ z.2)) t;
+        have h2 := congr_fun (G.3.2.2 (F.1.1 x.1, x.2) (F.1.1 y.1, y.2) (F.1.2 _ _ z.1, z.2)) (F.3.2.1 (_, _) t);
+        dsimp at *; rw [h1, h2] },
+    split_monomorphism := by have h1 := congr_fun (natural_transformation.mk.inj F.3.3);
+      have h2 := congr_fun (natural_transformation.mk.inj G.3.3);
+      dsimp [natural_transformation.comp] at *; congr; funext x f;
+      replace h1 := congr_fun (h1 (x.1, G.2.1 x.2)) (G.3.1.1 (_, _) f);
+      replace h2 := congr_fun (h2 (F.1.1 x.1, x.2)) f;
+      dsimp at *; rw [h1, h2],
+    split_epimorphism := by have h1 := congr_fun (natural_transformation.mk.inj G.3.4);
+      have h2 := congr_fun (natural_transformation.mk.inj F.3.4);
+      dsimp [natural_transformation.comp] at *; congr; funext x f;
+      replace h1 := congr_fun (h1 (F.1.1 x.1, x.2)) (F.3.2.1 (_, _) f);
+      replace h2 := congr_fun (h2 (x.1, G.2.1 x.2)) f;
+      dsimp at *; rw [h1, h2] } }
 
 end category

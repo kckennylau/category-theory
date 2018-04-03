@@ -1,4 +1,4 @@
-import .natural_transformation .free_group
+import .natural_transformation .free_group .tensor_product
 
 universes u v
 
@@ -143,6 +143,29 @@ coslice Top ⟨punit, ⊤⟩
     λ x, free_group.to_group.unique _ _ _ _
       (λ x y, by dsimp; rw [free_group.to_group.is_group_hom, free_group.to_group.is_group_hom])
       (λ x, by dsimp; rw [free_group.to_group.commutes, free_group.to_group.commutes]) _ }
+
+@[reducible] def Mod.Hom_functor_right (R : Type u) [comm_ring R] 
+  (N : Type v) [module R N] : functor (Mod R) (Mod R) :=
+{ F := λ P, ⟨@linear_map _ N P.1 _ _ P.2, @linear_map.module _ N P.1 _ _ P.2⟩,
+  mor := λ P₁ P₂ f, ⟨λ g, ⟨f.1 ∘ g.1, by letI := P₁.2; letI := P₂.2; apply is_linear_map.comp f.2 g.2⟩,
+    { add := λ T₁ T₂, subtype.eq $ funext $ λ x, by letI := P₁.2; letI := P₂.2; from f.2.1 (T₁.1 x) (T₂.1 x),
+      smul := λ c T₂, subtype.eq $ funext $ λ x, by letI := P₁.2; letI := P₂.2; from f.2.2 c (T₂.1 x) }⟩,
+  Hid := λ C, subtype.eq $ funext $ λ T, subtype.eq $ rfl,
+  Hcomp := λ C₁ C₂ C₃ f g, subtype.eq $ funext $ λ T, subtype.eq $ rfl }
+
+@[reducible] noncomputable def Mod.tensor (R : Type u) [comm_ring R]
+  (N : Type v) [module R N] : functor (Mod R) (Mod R) :=
+{ F := λ M, ⟨@tensor_product _ M.1 N _ M.2 _, @tensor_product.module _ _ M.1 N M.2 _⟩,
+  mor := λ M₁ M₂ f, ⟨@tensor_product.tprod_map _ _ M₁.1 M₂.1 N N M₁.2 M₂.2 _ _ f.1 f.2 id is_linear_map.id,
+    @tensor_product.tprod_map.linear _ _ M₁.1 M₂.1 N N M₁.2 M₂.2 _ _ f.1 f.2 id is_linear_map.id⟩,
+  Hid := λ M, subtype.eq $ eq.symm $ by letI := M.2; from tensor_product.universal_property.factor_unique _ _ is_linear_map.id (λ x y, rfl),
+  Hcomp := λ M₁ M₂ M₃ f g, subtype.eq $ by letI := M₁.2; letI := M₂.2; letI := M₃.2;
+    from tensor_product.universal_property.factor_unique _ _
+      (is_linear_map.comp
+        (tensor_product.universal_property.factor_linear _)
+        (tensor_product.universal_property.factor_linear _))
+      (λ x y, by dsimp; rw tensor_product.tprod_map.commutes;
+        rw tensor_product.tprod_map.commutes; refl) }
 
 end examples
 

@@ -22,6 +22,17 @@ namespace examples
   Hid_right := λ S T f, rfl,
   Hassoc := λ S T U V f g h, rfl }
 
+@[reducible] def Mon : category Σ α : Type u, monoid α :=
+{ Mor := λ G H, { f : G.1 → H.1 // by letI := G.2; letI := H.2;
+    exact (∀ x y, f (x * y) = f x * f y) ∧ f 1 = 1 },
+  Comp := λ G H K f g, ⟨f.1 ∘ g.1,
+    λ x y, by dsimp; rw [g.2.1, f.2.1],
+    by dsimp; rw [g.2.2, f.2.2]⟩,
+  Id := λ G, ⟨id, λ x y, rfl, rfl⟩,
+  Hid_left := λ G H f, subtype.eq rfl,
+  Hid_right := λ G H f, subtype.eq rfl,
+  Hassoc := λ G H K N f g h, subtype.eq rfl }
+
 @[reducible] def Grp : category Σ α : Type u, group α :=
 { Mor := λ G H, { f : G.1 → H.1 // @is_group_hom _ _ G.2 H.2 f },
   Comp := λ G H K f g, ⟨f.1 ∘ g.1, λ x y, calc
