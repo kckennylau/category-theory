@@ -1,4 +1,4 @@
-import .natural_transformation .free_group .tensor_product
+import .natural_transformation .tensor_product
 
 universes u v
 
@@ -197,6 +197,74 @@ coslice Top ⟨punit, ⊤⟩
   mor := λ S₁ S₂ f, (f, f),
   Hid := by simp,
   Hcomp := λ S T, by simp }
+
+section Grp_free_forgetful
+
+@[reducible] def Grp.InvMon.forgetful : functor Grp InvMon :=
+{ F := λ G, ⟨G.1, @group.to_inv_mon G.1 G.2⟩,
+  mor := λ G H f, ⟨f.1, by letI := G.2; letI := H.2; simp;
+    split; intros; simp [f.2 _ _, f.2.one, f.2.inv]⟩,
+  Hid := λ G, rfl,
+  Hcomp := λ G H K f g, rfl }
+
+@[reducible] def InvMon.InvSet.forgetful : functor InvMon InvSet :=
+{ F := λ M, ⟨M.1, @inv_mon.to_inv_type M.1 M.2⟩,
+  mor := λ M N f, ⟨f.1, by letI := M.2; letI := N.2;
+    intros; simp [f.2.3]⟩,
+  Hid := λ M, rfl,
+  Hcomp := λ M N P f g, rfl }
+
+@[reducible] def InvSet.forgetful : functor InvSet Set :=
+{ F := λ C, C.1,
+  mor := λ C D f, f.1,
+  Hid := λ C, rfl,
+  Hcomp := λ C D E F G, rfl }
+
+@[reducible] def InvSet.free : functor Set InvSet :=
+{ F := λ S, ⟨to_inv_type S, to_inv_type.inv_type S⟩,
+  mor := λ S T f, ⟨to_inv_type.left_adjoint _ _ (sum.inl ∘ f),
+    begin simp; split; intros; refl end⟩,
+  Hid := λ S, subtype.eq $ by simp; funext; cases x; refl,
+  Hcomp := λ S T U F G, subtype.eq $ by simp; funext; cases x; refl }
+
+@[reducible] def InvSet.InvMon.free : functor InvSet InvMon :=
+{ F := λ S, ⟨@inv_type.to_inv_mon S.1 S.2,
+    @inv_type.to_inv_mon.inv_mon S.1 S.2⟩,
+  mor := λ S T f, ⟨by letI := S.2; letI := T.2;
+      from inv_type.to_inv_mon.left_adjoint S.1
+        (@inv_type.to_inv_mon T.1 T.2)
+        (λ x, inv_type.to_inv_mon.of_inv_type (f.1 x)),
+    by split; intros;
+      try { apply inv_type.to_inv_mon.left_adjoint.mul };
+      try { apply inv_type.to_inv_mon.left_adjoint.one };
+      try { apply inv_type.to_inv_mon.left_adjoint.inv };
+      intros; simp [f.2 _]⟩,
+  Hid := λ S, subtype.eq $ eq.symm $ by dsimp; funext;
+    apply inv_type.to_inv_mon.left_adjoint.unique; intros; refl,
+  Hcomp := λ S T U F G, subtype.eq $ by dsimp; funext;
+    apply inv_type.to_inv_mon.left_adjoint.unique; intros;
+    simp [G.2 _, F.2 _, inv_type.to_inv_mon.left_adjoint.mul]; refl }
+
+@[reducible] def InvMon.Grp.free : functor InvMon Grp :=
+{ F := λ M, ⟨@inv_mon.to_group M.1 M.2,
+    @inv_mon.to_group.group M.1 M.2⟩,
+  mor := λ M N f, ⟨by letI := M.2; letI := N.2; letI := f.2;
+      dsimp at _inst_2;
+      from inv_mon.to_group.left_adjoint M.1
+        (@inv_mon.to_group N.1 N.2)
+        (λ x, inv_mon.to_group.of_inv_mon (f.1 x))
+        (by simp [f.2.1])
+        (by simp [f.2.2])
+        (by simp [f.2.3]),
+    @inv_mon.to_group.left_adjoint.is_group_hom _ M.2 _
+      (@inv_mon.to_group.group _ N.2) _ _ _ _⟩,
+  Hid := λ M, subtype.eq $ eq.symm $ by dsimp; funext;
+    apply inv_mon.to_group.left_adjoint.unique; intros; refl,
+  Hcomp := λ M N P F G, subtype.eq $ by dsimp; funext;
+    apply inv_mon.to_group.left_adjoint.unique; intros;
+    simp; refl }
+
+end Grp_free_forgetful
 
 end examples
 

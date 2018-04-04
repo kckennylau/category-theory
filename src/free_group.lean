@@ -14,6 +14,11 @@ instance group.to_inv_mon (G : Type u) [group G] : inv_mon G :=
   one_inv := one_inv,
   inv_inv := inv_inv }
 
+class inv_mon.is_hom (M : Type u) (N : Type v) [inv_mon M] [inv_mon N] (f : M → N) : Prop :=
+(mul : ∀ x y, f (x * y) = f x * f y)
+(one : f 1 = 1)
+(inv : ∀ x, f x⁻¹ = (f x)⁻¹)
+
 namespace inv_mon.to_group
 
 variables (M : Type u) [inv_mon M]
@@ -51,6 +56,18 @@ instance (M : Type u) [inv_mon M] : group (inv_mon.to_group M) :=
   mul_left_inv := λ x, quotient.induction_on x $
     λ a, quotient.sound $ rel.mul_left_inv a }
 
+def of_inv_mon {M : Type u} [inv_mon M] : M → inv_mon.to_group M :=
+quotient.mk
+
+@[simp] lemma of_inv_mon.mul {M : Type u} [inv_mon M] {x y : M} :
+  of_inv_mon (x * y) = of_inv_mon x * of_inv_mon y := rfl
+
+@[simp] lemma of_inv_mon.one {M : Type u} [inv_mon M] :
+  of_inv_mon (1:M) = 1 := rfl
+
+@[simp] lemma of_inv_mon.inv {M : Type u} [inv_mon M] {x : M} :
+  of_inv_mon x⁻¹ = (of_inv_mon x)⁻¹ := rfl
+
 section left_adjoint
 
 parameters (M : Type u) [inv_mon M]
@@ -82,10 +99,10 @@ end
 theorem left_adjoint.is_group_hom : is_group_hom left_adjoint :=
 λ x y, quotient.induction_on₂ x y Hmul
 
-theorem left_adjoint.commutes (x) : left_adjoint ⟦x⟧ = f x := rfl
+theorem left_adjoint.commutes (x) : left_adjoint (of_inv_mon x) = f x := rfl
 
 parameters (g : inv_mon.to_group M → G)
-parameters (Hg : ∀ x, g ⟦x⟧ = f x)
+parameters (Hg : ∀ x, g (of_inv_mon x) = f x)
 
 theorem left_adjoint.unique : ∀ x, g x = left_adjoint x :=
 λ x, quotient.induction_on x $ λ m, Hg m
@@ -122,6 +139,12 @@ instance (IT : Type u) [inv_type IT] : inv_mon (inv_type.to_inv_mon IT) :=
     rw [list.map_reverse, list.reverse_reverse];
     rw [list.map_map, h1, list.map_id] }
 
+def of_inv_type {IT : Type u} [inv_type IT] : IT → inv_type.to_inv_mon IT :=
+λ x, [x]
+
+@[simp] lemma of_inv_type.inv {IT : Type u} [inv_type IT] {x : IT} :
+  of_inv_type x⁻¹ = (of_inv_type x)⁻¹ := rfl
+
 section left_adjoint
 
 parameters (IT : Type u) [inv_type IT]
@@ -153,18 +176,18 @@ theorem left_adjoint.inv : ∀ x, left_adjoint x⁻¹ = (left_adjoint x)⁻¹
   rw [← left_adjoint.inv IT]; dsimp [left_adjoint];
   rw [mul_one, Hinv]; refl
 
-theorem left_adjoint.commutes (x) : left_adjoint [x] = f x :=
+theorem left_adjoint.commutes (x) : left_adjoint (of_inv_type x) = f x :=
 mul_one _
 
 parameters (g : inv_type.to_inv_mon IT → M)
 parameters (Hg1 : ∀ x y, g (x * y) = g x * g y)
 parameters (Hg2 : g 1 = 1)
-parameters (Hg3 : ∀ x, g [x] = f x)
+parameters (Hg3 : ∀ x, g (of_inv_type x) = f x)
 include Hg1 Hg3
 
 theorem left_adjoint.unique : ∀ x, g x = left_adjoint x
 | []     := Hg2
-| (h::t) := show g ([h] * t) = f h * left_adjoint t,
+| (h::t) := show g ((of_inv_type h) * t) = f h * left_adjoint t,
   by rw [Hg1, Hg3, left_adjoint.unique t]
 
 end left_adjoint
@@ -226,6 +249,9 @@ instance (T : Type u) : inv_type (to_inv_type T) :=
 { inv := inv T,
   inv_inv := inv.inv T }
 
+def of_inv_type {T : Type u} : T → to_inv_type T :=
+sum.inl
+
 section left_adjoint
 
 parameters (T : Type u)
@@ -240,11 +266,11 @@ theorem left_adjoint.inv : ∀ x, left_adjoint x⁻¹ = (left_adjoint x)⁻¹
 | (sum.inl x) := rfl
 | (sum.inr x) := eq.symm $ inv_type.inv_inv _
 
-theorem left_adjoint.commutes (x) : left_adjoint (sum.inl x) = f x := rfl
+theorem left_adjoint.commutes (x) : left_adjoint (of_inv_type x) = f x := rfl
 
 parameters (g : to_inv_type T → IT)
 parameters (Hg1 : ∀ x, g x⁻¹ = (g x)⁻¹)
-parameters (Hg2 : ∀ x, g (sum.inl x) = f x)
+parameters (Hg2 : ∀ x, g (of_inv_type x) = f x)
 
 theorem left_adjoint.unique : ∀ x, g x = left_adjoint x
 | (sum.inl x) := Hg2 x

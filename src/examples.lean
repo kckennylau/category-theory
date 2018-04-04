@@ -1,4 +1,4 @@
-import .basic .group_action
+import .basic .group_action .free_group
 
 universes u v
 
@@ -13,6 +13,15 @@ namespace examples
   Hid_left := λ S T f, rfl,
   Hid_right := λ S T f, rfl,
   Hassoc := λ S T U V f g h, rfl }
+
+@[reducible] def InvSet : category Σ α : Type u, inv_type α :=
+{ Mor := λ S T, { f : S.1 → T.1 // by letI := S.2; letI := T.2;
+    from ∀ x, f x⁻¹ = (f x)⁻¹ },
+  Comp := λ S T U f g, ⟨f.1 ∘ g.1, λ x, by dsimp; rw [g.2, f.2]⟩,
+  Id := λ S, ⟨@id S.1, λ x, rfl⟩,
+  Hid_left := λ S T f, subtype.eq rfl,
+  Hid_right := λ S T f, subtype.eq rfl,
+  Hassoc := λ S T U V f g h, subtype.eq rfl }
 
 @[reducible] def set : category Σ α : Type u, fintype α :=
 { Mor := λ S T, S.1 → T.1,
@@ -29,6 +38,19 @@ namespace examples
     λ x y, by dsimp; rw [g.2.1, f.2.1],
     by dsimp; rw [g.2.2, f.2.2]⟩,
   Id := λ G, ⟨id, λ x y, rfl, rfl⟩,
+  Hid_left := λ G H f, subtype.eq rfl,
+  Hid_right := λ G H f, subtype.eq rfl,
+  Hassoc := λ G H K N f g h, subtype.eq rfl }
+
+@[reducible] def InvMon : category Σ α : Type u, inv_mon α :=
+{ Mor := λ G H, { f : G.1 → H.1 // by letI := G.2; letI := H.2;
+    exact inv_mon.is_hom G.1 H.1 f },
+  Comp := λ G H K f g, by letI := G.2; letI := H.2; letI := K.2;
+    from ⟨f.1 ∘ g.1,
+    λ x y, by dsimp; rw [g.2.1, f.2.1],
+    by dsimp; rw [g.2.2, f.2.2],
+    λ x, by dsimp; rw [g.2.3, f.2.3]⟩,
+  Id := λ G, by letI := G.2; from ⟨id, λ x y, rfl, rfl, λ x, rfl⟩,
   Hid_left := λ G H f, subtype.eq rfl,
   Hid_right := λ G H f, subtype.eq rfl,
   Hassoc := λ G H K N f g h, subtype.eq rfl }
