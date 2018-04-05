@@ -280,11 +280,11 @@ end left_adjoint
 
 end to_inv_type
 
-@[reducible] def word (S : Type u) : Type u :=
+@[reducible] def free_group.word (S : Type u) : Type u :=
 inv_type.to_inv_mon $ to_inv_type S
 
 @[reducible] def free_group (S : Type u) : Type u :=
-inv_mon.to_group $ word S
+inv_mon.to_group $ free_group.word S
 
 namespace free_group
 
