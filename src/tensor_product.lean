@@ -40,7 +40,7 @@ def equiv_unit : equiv α unit :=
 { to_fun    := λ x, unit.star,
   inv_fun   := λ x, type_singleton.default α,
   left_inv  := λ x, by rw type_singleton.unique x,
-  right_inv := λ x, unit.cases_on x rfl }
+  right_inv := λ x, punit.cases_on x rfl }
 
 def equiv_singleton : equiv α β :=
 { to_fun    := λ x, type_singleton.default β,
@@ -131,69 +131,6 @@ protected def trans : β ≃ₘ γ → γ ≃ₘ α₁ → β ≃ₘ α₁ :=
   ..equiv.trans hbc.to_equiv hca.to_equiv }
 
 end module_iso
-
-theorem gsmul_sub (α : Type u) [add_group α] (a : α) :
-  ∀ i j : int, gsmul a (i - j) = gsmul a i - gsmul a j :=
-begin
-  intros i j,
-  rw sub_eq_add_neg,
-  rw sub_eq_add_neg,
-  rw gsmul_add,
-  rw gsmul_neg
-end
-
-theorem add_gsmul (α : Type u) [add_comm_group α] (a b : α) : ∀ n, gsmul (a + b) n = gsmul a n + gsmul b n :=
-begin
-  intro n,
-  induction n,
-  { rw ← int.coe_nat_eq,
-    rw smul_coe_nat,
-    rw smul_coe_nat,
-    rw smul_coe_nat,
-    rw add_monoid.add_smul },
-  { rw int.neg_succ_of_nat_eq,
-    rw gsmul_neg,
-    rw gsmul_neg,
-    rw gsmul_neg,
-    rw gsmul_add,
-    rw gsmul_add,
-    rw gsmul_add,
-    rw smul_coe_nat,
-    rw smul_coe_nat,
-    rw smul_coe_nat,
-    rw add_monoid.add_smul,
-    simp }
-end
-
-theorem sub_gsmul (α : Type u) [add_comm_group α] (a b : α) : ∀ n, gsmul (a - b) n = gsmul a n - gsmul b n :=
-begin
-  intro n,
-  rw sub_eq_add_neg,
-  rw sub_eq_add_neg,
-  rw add_gsmul,
-  rw neg_gsmul
-end
-
-theorem gsmul_smul (α : Type u) (β : Type v) [ring α] [module α β] (r : α) (x : β) :
-  ∀ n:ℤ, gsmul (r • x) n = r • gsmul x n :=
-begin
-  intro n,
-  cases n,
-  { induction n with n ih,
-    { simp },
-    { rw nat.succ_eq_add_one,
-      rw int.of_nat_add,
-      simp [gsmul_add] at ih ⊢,
-      rw ih,
-      rw smul_add } },
-  { rw int.neg_succ_of_nat_eq,
-    rw gsmul_neg,
-    rw gsmul_neg,
-    rw gsmul_add,
-    induction n with n ih,
-    { simp [gsmul_one] },
-    { simpa [gsmul_add, ih, smul_add] using ih } }
-end
 
 namespace multiset
 
@@ -862,7 +799,7 @@ variables {f : β → γ → α₁} (hf : is_bilinear_map f)
 include β γ α₁ hf
 
 def factor_aux : free_abelian_group β γ → α₁ :=
-λ g : free_abelian_group β γ, (g.sum (λ z n, gsmul (f z.fst z.snd) n))
+λ g : free_abelian_group β γ, (g.sum (λ z n, n • (f z.fst z.snd)))
 
 theorem factor_equiv : ∀ g₁ g₂ : free_abelian_group β γ, g₁ ≈ g₂ → factor_aux hf g₁ = factor_aux hf g₂ :=
 λ g₁ g₂ ⟨L, hL, hgL⟩,
@@ -895,16 +832,16 @@ begin
       rw finsupp.sum_single_index,
       rw finsupp.sum_single_index,
       rw finsupp.sum_single_index,
-      rw ← add_gsmul,
-      rw ← sub_gsmul,
+      rw ← smul_add,
+      rw ← smul_sub,
       rw hf.pair_add,
       simp,
-      { rw gsmul_zero },
-      { rw gsmul_zero },
-      { rw gsmul_zero },
-      { intros, rw gsmul_zero },
-      { intros, rw gsmul_add },
-      { intros, rw gsmul_sub } },
+      { dsimp, rw zero_smul },
+      { dsimp, rw zero_smul },
+      { dsimp, rw zero_smul },
+      { intros, dsimp, rw zero_smul },
+      { intros, simp, rw add_smul },
+      { intros, simp [add_smul] } },
     { rcases h with ⟨x₁, x₂, y, n, h⟩,
       rw h,
       unfold relators.add_pair,
@@ -913,32 +850,32 @@ begin
       rw finsupp.sum_single_index,
       rw finsupp.sum_single_index,
       rw finsupp.sum_single_index,
-      rw ← add_gsmul,
-      rw ← sub_gsmul,
+      rw ← smul_add,
+      rw ← smul_sub,
       rw hf.add_pair,
       simp,
-      { rw gsmul_zero },
-      { rw gsmul_zero },
-      { rw gsmul_zero },
-      { intros, rw gsmul_zero },
-      { intros, rw gsmul_add },
-      { intros, rw gsmul_sub } },
+      { dsimp, rw zero_smul },
+      { dsimp, rw zero_smul },
+      { dsimp, rw zero_smul },
+      { intros, dsimp, rw zero_smul },
+      { intros, simp, rw add_smul },
+      { intros, simp [add_smul] } },
     { rcases h with ⟨r, x, y, n, h⟩,
       rw h,
       unfold relators.smul_trans,
       rw finsupp.sum_sub_index,
       rw finsupp.sum_single_index,
       rw finsupp.sum_single_index,
-      rw ← sub_gsmul,
+      rw ← smul_sub,
       rw hf.smul_pair,
       rw hf.pair_smul,
       simp,
-      { rw gsmul_zero },
-      { rw gsmul_zero },
-      { intros, rw gsmul_sub } },
-    { intros, rw gsmul_zero },
-    { intros, rw gsmul_add },
-    { intros, rw gsmul_sub } }
+      { dsimp, rw zero_smul },
+      { dsimp, rw zero_smul },
+      { intros, simp [add_smul] } },
+    { intros, dsimp, rw zero_smul },
+    { intros, simp, rw add_smul },
+    { intros, simp [add_smul] } }
 end
 
 def factor : β ⊗ γ → α₁ :=
@@ -951,8 +888,8 @@ begin
   simp [universal_property.factor],
   simp [universal_property.factor_aux],
   rw finsupp.sum_add_index,
-  { intros, rw gsmul_zero },
-  { intros, rw gsmul_add }
+  { intros, dsimp, rw zero_smul },
+  { intros, simp [add_smul] }
 end
 
 theorem factor_smul : ∀ (r : α) (g : β ⊗ γ), factor hf (r • g) = r • factor hf g :=
@@ -993,15 +930,14 @@ begin
     rw finsupp.sum_single_index,
     rw finsupp.sum_single_index,
     rw hf.smul_pair,
-    rw gsmul_smul,
-    rw smul_add,
-    { rw gsmul_zero },
-    { rw gsmul_zero },
+    simp [smul_add, smul_smul, mul_comm],
+    { dsimp, rw zero_smul },
+    { dsimp, rw zero_smul },
     { rw finsupp.single_zero, refl },
-    { intros, rw gsmul_zero },
-    { intros, rw gsmul_add },
-    { intros, rw gsmul_zero },
-    { intros, rw gsmul_add },
+    { intros, dsimp, rw zero_smul },
+    { intros, simp [add_smul] },
+    { intros, dsimp, rw zero_smul },
+    { intros, simp [add_smul] },
     { intros, rw finsupp.single_zero, refl },
     { intros, rw finsupp.single_add },
     { exact hnT } }
@@ -1056,26 +992,24 @@ begin
     specialize hh x' y',
     simp [function.comp, tprod] at hh,
     clear H' hn',
-    suffices : h ⟦finsupp.single (x', y') n'⟧ = gsmul (f x' y') n',
+    suffices : h ⟦finsupp.single (x', y') n'⟧ = n' • (f x' y'),
     { rw this },
     cases n',
     { induction n' with n' ih',
       { rw int.of_nat_zero,
         rw finsupp.single_zero,
-        rw gsmul_zero,
+        dsimp, rw zero_smul,
         exact H.zero },
       { rw int.of_nat_succ,
         rw finsupp.single_add,
         rw ← add_quot,
         rw H.add,
         rw [ih', hh],
-        rw gsmul_add,
-        rw gsmul_one } },
+        simp, rw add_smul,
+        rw one_smul } },
     { induction n' with n' ih',
       { rw int.neg_succ_of_nat_eq,
         rw finsupp.single_neg,
-        rw gsmul_neg,
-        rw finsupp.single_add,
         simp,
         rw ← neg_quot,
         rw H.neg,
@@ -1096,10 +1030,10 @@ begin
         rw int.of_nat_one,
         rw ih',
         rw hh,
-        simp [gsmul_add, gsmul_neg] } },
-    { rw gsmul_zero },
-    { intros, rw gsmul_zero },
-    { intros, rw gsmul_add },
+        simp [add_smul] } },
+    { dsimp, rw zero_smul },
+    { intros, dsimp, rw zero_smul },
+    { intros, simp [add_smul] },
     { exact hnT } }
 end
 
