@@ -1,27 +1,37 @@
--- https://math.stackexchange.com/a/852661/328173
+/- 
+Copyright (c) 2018 Kenny Lau. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Kenny Lau
+
+Three-step construction of free group of a type.
+Based on https://math.stackexchange.com/a/852661/328173
+-/
 
 import data.list.basic algebra.group
 
 universes u v
 
-class inv_mon (M : Type u) extends monoid M, has_inv M :=
+class inv_type (IT : Type u) extends has_inv IT :=
+(inv_inv : ∀ x : IT, x⁻¹⁻¹ = x)
+
+class involution_monoid (M : Type u) extends monoid M, inv_type M :=
 (mul_inv : ∀ x y : M, (x*y)⁻¹ = y⁻¹ * x⁻¹)
 (one_inv : (1:M)⁻¹ = 1)
-(inv_inv : ∀ x : M, x⁻¹⁻¹ = x)
 
-instance group.to_inv_mon (G : Type u) [group G] : inv_mon G :=
+instance group.to_involution_monoid (G : Type u) [group G] : involution_monoid G :=
 { mul_inv := mul_inv_rev,
   one_inv := one_inv,
   inv_inv := inv_inv }
 
-class inv_mon.is_hom (M : Type u) (N : Type v) [inv_mon M] [inv_mon N] (f : M → N) : Prop :=
+class involution_monoid.is_hom {M : Type u} {N : Type v}
+  [involution_monoid M] [involution_monoid N] (f : M → N) : Prop :=
 (mul : ∀ x y, f (x * y) = f x * f y)
 (one : f 1 = 1)
 (inv : ∀ x, f x⁻¹ = (f x)⁻¹)
 
-namespace inv_mon.to_group
+namespace involution_monoid.to_group
 
-variables (M : Type u) [inv_mon M]
+variables (M : Type u) [involution_monoid M]
 
 inductive rel : M → M → Prop
 | refl : ∀ x, rel x x
@@ -34,14 +44,14 @@ inductive rel : M → M → Prop
 instance quotient_rel : setoid M :=
 ⟨rel M, rel.refl, rel.symm, rel.trans⟩
 
-end inv_mon.to_group
+end involution_monoid.to_group
 
-@[reducible] def inv_mon.to_group (M : Type u) [inv_mon M] : Type u :=
-quotient (inv_mon.to_group.quotient_rel M)
+@[reducible] def involution_monoid.to_group (M : Type u) [involution_monoid M] : Type u :=
+quotient (involution_monoid.to_group.quotient_rel M)
 
-namespace inv_mon.to_group
+namespace involution_monoid.to_group
 
-instance (M : Type u) [inv_mon M] : group (inv_mon.to_group M) :=
+instance (M : Type u) [involution_monoid M] : group (involution_monoid.to_group M) :=
 { mul := λ x y, quotient.lift_on₂ x y (λ m n, quotient.mk (m * n))
     (λ x y z w hxz hyw, quotient.sound $ rel.mul x y z w hxz hyw),
   mul_assoc := λ x y z, quotient.induction_on₃ x y z $
@@ -56,73 +66,65 @@ instance (M : Type u) [inv_mon M] : group (inv_mon.to_group M) :=
   mul_left_inv := λ x, quotient.induction_on x $
     λ a, quotient.sound $ rel.mul_left_inv a }
 
-def of_inv_mon {M : Type u} [inv_mon M] : M → inv_mon.to_group M :=
+def of_involution_monoid {M : Type u} [involution_monoid M] : M → involution_monoid.to_group M :=
 quotient.mk
 
-@[simp] lemma of_inv_mon.mul {M : Type u} [inv_mon M] {x y : M} :
-  of_inv_mon (x * y) = of_inv_mon x * of_inv_mon y := rfl
+@[simp] lemma of_involution_monoid.mul {M : Type u} [involution_monoid M] {x y : M} :
+  of_involution_monoid (x * y) = of_involution_monoid x * of_involution_monoid y := rfl
 
-@[simp] lemma of_inv_mon.one {M : Type u} [inv_mon M] :
-  of_inv_mon (1:M) = 1 := rfl
+@[simp] lemma of_involution_monoid.one {M : Type u} [involution_monoid M] :
+  of_involution_monoid (1:M) = 1 := rfl
 
-@[simp] lemma of_inv_mon.inv {M : Type u} [inv_mon M] {x : M} :
-  of_inv_mon x⁻¹ = (of_inv_mon x)⁻¹ := rfl
+@[simp] lemma of_involution_monoid.inv {M : Type u} [involution_monoid M] {x : M} :
+  of_involution_monoid x⁻¹ = (of_involution_monoid x)⁻¹ := rfl
 
 section left_adjoint
 
-parameters (M : Type u) [inv_mon M]
+parameters (M : Type u) [involution_monoid M]
 parameters (G : Type v) [group G]
 parameters (f : M → G) -- M → Forgetful(G)
-parameters (Hmul : ∀ x y, f (x * y) = f x * f y)
-parameters (Hone : f 1 = 1)
-parameters (Hinv : ∀ x, f x⁻¹ = (f x)⁻¹)
-include Hmul Hone Hinv
+parameters [Hf : involution_monoid.is_hom f]
+include Hf
 
-def left_adjoint : inv_mon.to_group M → G := -- Free(M) → G
+def left_adjoint : involution_monoid.to_group M → G := -- Free(M) → G
 λ x, quotient.lift_on x f $ λ a b hab, begin
   induction hab with h c d h ih c d e h1 h2 ih1 ih2
     c d p q h1 h2 ih1 ih2 c d h ih c,
-  case inv_mon.to_group.rel.refl
+  case involution_monoid.to_group.rel.refl
   { refl },
-  case inv_mon.to_group.rel.symm
+  case involution_monoid.to_group.rel.symm
   { exact ih.symm },
-  case inv_mon.to_group.rel.trans
+  case involution_monoid.to_group.rel.trans
   { exact ih1.trans ih2 },
-  case inv_mon.to_group.rel.mul
-  { rw [Hmul, Hmul, ih1, ih2] },
-  case inv_mon.to_group.rel.inv
-  { rw [Hinv, Hinv, ih] },
-  case inv_mon.to_group.rel.mul_left_inv
-  { rw [Hmul, Hinv, mul_left_inv, Hone] }
+  case involution_monoid.to_group.rel.mul
+  { rw [Hf.mul, Hf.mul, ih1, ih2] },
+  case involution_monoid.to_group.rel.inv
+  { rw [Hf.inv, Hf.inv, ih] },
+  case involution_monoid.to_group.rel.mul_left_inv
+  { rw [Hf.mul, Hf.inv, mul_left_inv, Hf.one] }
 end
 
 theorem left_adjoint.is_group_hom : is_group_hom left_adjoint :=
-λ x y, quotient.induction_on₂ x y Hmul
+λ x y, quotient.induction_on₂ x y Hf.mul
 
-theorem left_adjoint.commutes (x) : left_adjoint (of_inv_mon x) = f x := rfl
+theorem left_adjoint.commutes (x) : left_adjoint (of_involution_monoid x) = f x := rfl
 
-parameters (g : inv_mon.to_group M → G)
-parameters (Hg : ∀ x, g (of_inv_mon x) = f x)
+parameters (g : involution_monoid.to_group M → G)
+parameters (Hg : ∀ x, g (of_involution_monoid x) = f x)
 
 theorem left_adjoint.unique : ∀ x, g x = left_adjoint x :=
 λ x, quotient.induction_on x $ λ m, Hg m
 
 end left_adjoint
 
-end inv_mon.to_group
+end involution_monoid.to_group
 
-class inv_type (IT : Type u) extends has_inv IT :=
-(inv_inv : ∀ x : IT, x⁻¹⁻¹ = x)
-
-instance inv_mon.to_inv_type (M : Type u) [inv_mon M] : inv_type M :=
-{ inv_inv := inv_mon.inv_inv }
-
-@[reducible] def inv_type.to_inv_mon (IT : Type u) [inv_type IT] :=
+@[reducible] def inv_type.to_involution_monoid (IT : Type u) [inv_type IT] :=
 list IT
 
-namespace inv_type.to_inv_mon
+namespace inv_type.to_involution_monoid
 
-instance (IT : Type u) [inv_type IT] : inv_mon (inv_type.to_inv_mon IT) :=
+instance (IT : Type u) [inv_type IT] : involution_monoid (inv_type.to_involution_monoid IT) :=
 { mul := (++),
   one := [],
   inv := λ x, x.reverse.map has_inv.inv,
@@ -139,7 +141,7 @@ instance (IT : Type u) [inv_type IT] : inv_mon (inv_type.to_inv_mon IT) :=
     rw [list.map_reverse, list.reverse_reverse];
     rw [list.map_map, h1, list.map_id] }
 
-def of_inv_type {IT : Type u} [inv_type IT] : IT → inv_type.to_inv_mon IT :=
+def of_inv_type {IT : Type u} [inv_type IT] : IT → inv_type.to_involution_monoid IT :=
 λ x, [x]
 
 @[simp] lemma of_inv_type.inv {IT : Type u} [inv_type IT] {x : IT} :
@@ -148,38 +150,39 @@ def of_inv_type {IT : Type u} [inv_type IT] : IT → inv_type.to_inv_mon IT :=
 section left_adjoint
 
 parameters (IT : Type u) [inv_type IT]
-parameters (M : Type v) [inv_mon M]
+parameters (M : Type v) [involution_monoid M]
 parameters (f : IT → M) -- IT → Forgetful(M)
 parameters (Hinv : ∀ x, f x⁻¹ = (f x)⁻¹)
 
-def left_adjoint : inv_type.to_inv_mon IT → M -- Free(IT) → M
-| []     := 1
-| (h::IT) := f h * left_adjoint IT
+def left_adjoint : inv_type.to_involution_monoid IT → M := -- Free(IT) → M
+λ L, list.prod (L.map f)
 
-theorem left_adjoint.mul : ∀ x y, left_adjoint (x * y) = left_adjoint x * left_adjoint y
-| []     y := eq.symm $ one_mul _
-| (h::IT) y := show f h * left_adjoint (IT * y) = f h * left_adjoint IT * left_adjoint y,
-  by rw [left_adjoint.mul IT y, mul_assoc]
+theorem left_adjoint.append (x y) : left_adjoint (x ++ y) = left_adjoint x * left_adjoint y :=
+by dsimp [left_adjoint]; rw [list.map_append, list.prod_append]
 
-theorem left_adjoint.append : ∀ x y, left_adjoint (x ++ y) = left_adjoint x * left_adjoint y :=
-left_adjoint.mul
+theorem left_adjoint.mul (x y) : left_adjoint (x * y) = left_adjoint x * left_adjoint y :=
+left_adjoint.append x y
 
 theorem left_adjoint.one : left_adjoint 1 = 1 := rfl
 
 include Hinv
 theorem left_adjoint.inv : ∀ x, left_adjoint x⁻¹ = (left_adjoint x)⁻¹
-| []     := eq.symm $ inv_mon.one_inv M
-| (h::IT) := show left_adjoint ((h :: IT).reverse.map has_inv.inv)
-    = (f h * left_adjoint IT)⁻¹,
-  by rw [inv_mon.mul_inv, list.reverse_cons, list.map_concat];
-  rw [list.concat_eq_append, left_adjoint.append];
-  rw [← left_adjoint.inv IT]; dsimp [left_adjoint];
-  rw [mul_one, Hinv]; refl
+| []     := eq.symm $ involution_monoid.one_inv M
+| (h::IT) := have _ := left_adjoint.inv IT,
+  by dsimp [left_adjoint, has_inv.inv] at this ⊢;
+  rw [list.map_reverse, list.map_reverse] at this ⊢;
+  rw [list.map_cons, list.map_cons, list.prod_cons, involution_monoid.mul_inv, ← this];
+  rw [list.reverse_cons', list.prod_append, list.prod_cons, list.prod_nil];
+  rw [mul_one, Hinv]
+omit Hinv
+
+instance left_adjoint.hom : involution_monoid.is_hom left_adjoint :=
+⟨left_adjoint.mul, left_adjoint.one, left_adjoint.inv⟩
 
 theorem left_adjoint.commutes (x) : left_adjoint (of_inv_type x) = f x :=
-mul_one _
+one_mul _
 
-parameters (g : inv_type.to_inv_mon IT → M)
+parameters (g : inv_type.to_involution_monoid IT → M)
 parameters (Hg1 : ∀ x y, g (x * y) = g x * g y)
 parameters (Hg2 : g 1 = 1)
 parameters (Hg3 : ∀ x, g (of_inv_type x) = f x)
@@ -187,50 +190,12 @@ include Hg1 Hg3
 
 theorem left_adjoint.unique : ∀ x, g x = left_adjoint x
 | []     := Hg2
-| (h::t) := show g ((of_inv_type h) * t) = f h * left_adjoint t,
-  by rw [Hg1, Hg3, left_adjoint.unique t]
+| (h::t) := eq.trans (Hg1 (of_inv_type h) t) $
+  by rw [left_adjoint.unique t]; dsimp [left_adjoint]; rw [Hg3, list.prod_cons]
 
 end left_adjoint
 
-inductive red (IT : Type u) [inv_type IT] :
-  inv_type.to_inv_mon IT → inv_type.to_inv_mon IT → Prop
-| cons : ∀ a x y, red x y → red (a :: x) (a :: y)
-| cancel : ∀ a x, red (a :: a⁻¹ :: x) x
-
-theorem red.cons.inv (IT : Type u) [inv_type IT] :
-  ∀ a x y, red IT (a :: x) (a :: y) → red IT x y
-| _ _ _ (red.cons a x y h) := h
-| _ _ p (red.cancel a x) :=
-  have h1 : _ := red.cancel a⁻¹ p,
-  by rwa inv_type.inv_inv a at h1
-
-/-
-theorem eqv_gen_red (IT : Type u) [inv_type IT]
-  {x y : inv_type.to_inv_mon IT} : x ≈ y ↔ eqv_gen (red IT) x y :=
-begin
-  split,
-  { intro h,
-    induction h with h c d h ih c d e h1 h2 ih1 ih2
-      c d p q h1 h2 ih1 ih2 c d h ih c,
-    case inv_mon.to_group.rel.refl
-    { exact eqv_gen.refl _ },
-    case inv_mon.to_group.rel.symm
-    { exact eqv_gen.symm _ _ ih },
-    case inv_mon.to_group.rel.trans
-    { exact eqv_gen.trans _ _ _ ih1 ih2 },
-    case inv_mon.to_group.rel.mul
-    { induction c with c1 c2 ih3,
-      { admit },
-      { admit } },
-    case inv_mon.to_group.rel.inv
-    { admit },
-    case inv_mon.to_group.rel.mul_left_inv
-    { admit } },
-  { admit }
-end
--/
-
-end inv_type.to_inv_mon
+end inv_type.to_involution_monoid
 
 @[reducible] def to_inv_type (T : Type u) :=
 sum T T
@@ -281,17 +246,17 @@ end left_adjoint
 end to_inv_type
 
 @[reducible] def free_group.word (S : Type u) : Type u :=
-inv_type.to_inv_mon $ to_inv_type S
+inv_type.to_involution_monoid $ to_inv_type S
 
 @[reducible] def free_group (S : Type u) : Type u :=
-inv_mon.to_group $ free_group.word S
+involution_monoid.to_group $ free_group.word S
 
 namespace free_group
 
 variables (S : Type u)
 
 instance : group (free_group S) :=
-inv_mon.to_group.group _
+involution_monoid.to_group.group _
 
 def of_type : S → free_group S :=
 λ x, ⟦[sum.inl x]⟧
@@ -300,17 +265,12 @@ variables (G : Type v) [group G]
 variables (f : S → G) -- S → Forgetful(G)
 
 def to_group : free_group S → G := -- Free(S) → G
-λ x, inv_mon.to_group.left_adjoint _ G
-  (λ y, inv_type.to_inv_mon.left_adjoint (to_inv_type S) _
+involution_monoid.to_group.left_adjoint _ G
+  (λ y, inv_type.to_involution_monoid.left_adjoint (to_inv_type S) _
     (to_inv_type.left_adjoint S _ f) y)
-  (inv_type.to_inv_mon.left_adjoint.mul _ _ _)
-  (inv_type.to_inv_mon.left_adjoint.one _ _ _)
-  (inv_type.to_inv_mon.left_adjoint.inv _ _ _
-    (to_inv_type.left_adjoint.inv _ _ _))
-  x
 
 def to_group.is_group_hom : is_group_hom (to_group S G f) :=
-inv_mon.to_group.left_adjoint.is_group_hom _ _ _ _ _ _
+involution_monoid.to_group.left_adjoint.is_group_hom _ _ _ _ _ _
 
 def to_group.commutes (x) : to_group S G f (of_type S x) = f x :=
 mul_one _
@@ -321,10 +281,10 @@ variables (Hg2 : ∀ x, g (of_type S x) = f x)
 include Hg1 Hg2
 
 def to_group.unique : ∀ x, g x = to_group S G f x :=
-λ x, quotient.induction_on x $ λ m, list.rec_on m Hg1.one $
+λ x, quotient.induction_on x $ λ m, list.rec_on m (is_group_hom.one g) $
 λ h t ih, sum.rec_on h
   (λ a, show g (of_type S a * ⟦t⟧) = _ , by rw [Hg1, Hg2, ih]; refl)
-  (λ a, show g ((of_type S a)⁻¹ * ⟦t⟧) = _ , by rw [Hg1, ← Hg1.inv, Hg2, ih]; refl)
+  (λ a, show g ((of_type S a)⁻¹ * ⟦t⟧) = _ , by rw [Hg1, is_group_hom.inv g, Hg2, ih]; refl)
 
 omit Hg1 Hg2
 
@@ -391,38 +351,8 @@ theorem reduce.exact.mul.nil : ∀ p q : word S, [] = reduce S p →
       exact list.no_confusion h },
   end
 
-/-
-theorem reduce.exact : ∀ v w : word S, v ≈ w → reduce S v = reduce S w :=
-begin
-  intros v w h,
-  induction h with h c d h ih c d e h1 h2 ih1 ih2
-    c d p q h1 h2 ih1 ih2 c d h ih c,
-  case inv_mon.to_group.rel.refl
-  { refl },
-  case inv_mon.to_group.rel.symm
-  { exact ih.symm },
-  case inv_mon.to_group.rel.trans
-  { exact ih1.trans ih2 },
-  case inv_mon.to_group.rel.mul
-  { clear h1 h2,
-    induction c with c1 c2 ih3,
-    case list.nil
-    { change [] = reduce S p at ih1,
-      change reduce S d = reduce S (p * q),
-      rw ih2, clear ih2,
-      exact reduce.exact.mul.nil _ _ _ ih1 },
-    case list.cons
-    { admit } },
-  case inv_mon.to_group.rel.inv
-  { admit },
-  case inv_mon.to_group.rel.mul_left_inv
-  { induction c with h t ih,
-    case list.nil
-    { refl },
-    case list.cons
-    { admit } }
-end
--/
+-- TODO
+-- theorem reduce.exact : ∀ v w : word S, v ≈ w → reduce S v = reduce S w :=
 
 theorem reduce.min : ∀ w : word S, (reduce S w).length ≤ w.length 
 | []                            := dec_trivial
@@ -478,9 +408,7 @@ theorem reduce.idem : ∀ w : word S, reduce S (reduce S w) = reduce S w
       from congr_arg _ (congr_arg _ (reduce.idem t))
   end
 
-/-
-def to_word : free_group S → word S :=
-quotient.lift (reduce S) sorry
--/
+-- TODO
+-- def to_word : free_group S → word S :=
 
 end free_group
